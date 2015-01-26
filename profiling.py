@@ -1,30 +1,31 @@
 import hotshot
 import hotshot.stats
 
-__profiled__ = False
+__profiled__ = []
 
 def profile(func):
     global __profiled__
-    __profiled__ = True
-    def _wraper(*args, **kwargs):
-        prof = hotshot.Profile("profile.prof")
+    __profiled__.append(func.__name__)
+    def _wrapper(*args, **kwargs):
+        prof = hotshot.Profile('profile.prof')
         result = prof.runcall(func, *args, **kwargs)
         prof.close()
         return result
-    return _wraper
+    return _wrapper
     
 def print_stats():
     def func_std_string(func):
-        file, line, name = func
-        return '%(name)s at File "%(file)s", line %(line)d' % locals()
+        path, line, name = func
+        return '%s at File "%s", line %d' % (name, path, line)
     
     if __profiled__:
-        import hotshot.stats
         import pstats
         pstats.func_std_string = func_std_string
-        stats = hotshot.stats.load("profile.prof")
+        stats = hotshot.stats.load('profile.prof')
         stats.sort_stats('time', 'calls')
         stats.print_stats(20)
+        for funcname in __profiled__:
+            stats.print_callees(funcname)
         
 import atexit
 atexit.register(print_stats)
